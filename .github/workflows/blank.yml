@@ -2,7 +2,9 @@ name: Build PC Windows
 
 on:
   push:
-    branches: ["main"]
+    branches:
+      - main
+
   workflow_dispatch:
 
 permissions:
@@ -13,8 +15,14 @@ jobs:
     runs-on: windows-latest
 
     steps:
+
       - name: Baixar projeto
         uses: actions/checkout@v4
+
+      - name: Instalar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
 
       - name: Criar programa
         shell: pwsh
@@ -58,12 +66,10 @@ jobs:
           botao.pack(pady=30)
 
           root.mainloop()
-          '@ | Set-Content app.py -Encoding UTF8
 
-      - name: Instalar Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
+          if __name__ == "__main__":
+              pass
+          '@ | Set-Content app.py -Encoding UTF8
 
       - name: Instalar PyInstaller
         run: |
@@ -74,7 +80,7 @@ jobs:
         run: |
           python -m py_compile app.py
 
-      - name: Criar EXE
+      - name: Gerar EXE
         run: |
           pyinstaller --onefile --windowed --clean --name MeuPrograma app.py
 
@@ -82,17 +88,14 @@ jobs:
         shell: pwsh
         run: |
           if (!(Test-Path "dist/MeuPrograma.exe")) {
-              Write-Error "Falha: EXE não foi criado."
+              Write-Error "O EXE não foi criado."
               exit 1
           }
 
-          Write-Host "Build concluída!"
-          Get-Item "dist/MeuPrograma.exe"
+          Write-Host "Build concluída com sucesso!"
 
-      - name: Disponibilizar EXE para download
+      - name: Disponibilizar EXE
         uses: actions/upload-artifact@v4
         with:
           name: MeuPrograma-Windows
           path: dist/MeuPrograma.exe
-          if-no-files-found: error
-concurrency: 
