@@ -1,0 +1,98 @@
+name: Build PC Windows
+
+on:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Baixar projeto
+        uses: actions/checkout@v4
+
+      - name: Criar programa
+        shell: pwsh
+        run: |
+          @'
+          import tkinter as tk
+          from tkinter import messagebox
+
+          def testar():
+              messagebox.showinfo(
+                  "Programa",
+                  "Programa funcionando corretamente!"
+              )
+
+          root = tk.Tk()
+          root.title("Meu Programa")
+          root.geometry("500x300")
+          root.resizable(False, False)
+
+          titulo = tk.Label(
+              root,
+              text="Meu Programa para PC",
+              font=("Arial", 22, "bold")
+          )
+          titulo.pack(pady=50)
+
+          texto = tk.Label(
+              root,
+              text="Build automática para Windows",
+              font=("Arial", 12)
+          )
+          texto.pack()
+
+          botao = tk.Button(
+              root,
+              text="Testar",
+              command=testar,
+              width=20,
+              height=2
+          )
+          botao.pack(pady=30)
+
+          root.mainloop()
+          '@ | Set-Content app.py -Encoding UTF8
+
+      - name: Instalar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Instalar PyInstaller
+        run: |
+          python -m pip install --upgrade pip
+          pip install pyinstaller
+
+      - name: Verificar código
+        run: |
+          python -m py_compile app.py
+
+      - name: Criar EXE
+        run: |
+          pyinstaller --onefile --windowed --clean --name MeuPrograma app.py
+
+      - name: Verificar EXE
+        shell: pwsh
+        run: |
+          if (!(Test-Path "dist/MeuPrograma.exe")) {
+              Write-Error "Falha: EXE não foi criado."
+              exit 1
+          }
+
+          Write-Host "Build concluída!"
+          Get-Item "dist/MeuPrograma.exe"
+
+      - name: Disponibilizar EXE para download
+        uses: actions/upload-artifact@v4
+        with:
+          name: MeuPrograma-Windows
+          path: dist/MeuPrograma.exe
+          if-no-files-found: error
+concurrency: 
